@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Phòng Ghi Âm</title>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#1d1d1b;--muted:#6b6a65;--line:#e4e2dc;--accent:#2f5d50;--accent-soft:#e3eee9;--rec:#c0392b;--warn:#9a6b00;--warn-soft:#fbf1d9}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:24px 16px 60px}
+h1{font:600 26px/1.2 Georgia,serif;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+.label{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;margin-bottom:6px;display:block}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input,select,textarea{font:inherit;border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:#fff;color:var(--ink)}
+input[type=password],input[type=text]{flex:1;min-width:220px}
+.btn{font:inherit;border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 14px;cursor:pointer}
+.btn:hover{border-color:#bbb}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.5;cursor:default}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:#fff;border-radius:99px;padding:5px 12px;cursor:pointer;font-size:14px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.q{font:500 20px/1.35 Georgia,serif;margin:14px 0 4px}
+.qmeta{color:var(--muted);font-size:13px}
+.recbtn{width:84px;height:84px;border-radius:50%;border:none;background:var(--rec);color:#fff;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 2px 10px rgba(192,57,43,.3)}
+.recbtn.on{animation:pulse 1.2s infinite;background:#922b21}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(192,57,43,.5)}70%{box-shadow:0 0 0 16px rgba(192,57,43,0)}100%{box-shadow:0 0 0 0 rgba(192,57,43,0)}}
+.timer{font:600 30px/1 ui-monospace,Menlo,monospace;min-width:90px}
+.status{color:var(--muted);font-size:14px}
+.status.err{color:var(--rec)}
+.status.warn{color:var(--warn)}
+.items{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.item{border:1px solid var(--line);border-radius:10px;padding:12px}
+.item h3{margin:0 0 6px;font-size:15px}
+.tr{white-space:pre-wrap;line-height:1.7}
+.tr .pz{color:var(--muted);font-size:13px}
+.tr .uc{background:var(--warn-soft);color:var(--warn);border-radius:4px;padding:0 2px}
+.tr .fl{color:var(--rec)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:10px 0}
+.stat{background:var(--bg);border-radius:10px;padding:10px;text-align:center}
+.stat b{display:block;font-size:20px}
+.stat span{font-size:12px;color:var(--muted)}
+.note{background:var(--accent-soft);color:var(--accent);border-radius:10px;padding:10px 12px;font-size:14px}
+audio{width:100%;margin-top:8px}
+#stname{flex:1;min-width:220px}
+.hist{display:flex;flex-direction:column;gap:10px}
+.hitem{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.hitem.fail{border-color:#e7c3bd;background:#fdf6f5}
+.hhead{display:flex;gap:8px 12px;align-items:center;flex-wrap:wrap}
+.hhead .hname{flex:1 1 180px;min-width:140px;padding:5px 8px;font-weight:600}
+.hmeta{font-size:13px;color:var(--muted);white-space:nowrap}
+.hprev{font-size:14px;line-height:1.6;cursor:pointer;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hprev.open{display:block}
+.hprev .pz{color:var(--muted);font-size:12.5px}
+.hitem audio{margin-top:0;height:36px}
+.hitem .btn{padding:6px 12px;font-size:14px}
+.btn.danger{color:var(--rec)}
+.empty{color:var(--muted);font-size:14px;padding:8px 0}
+details summary{cursor:pointer;color:var(--muted);font-size:14px}
+.small{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Phòng Ghi Âm</h1>
+  <p class="sub">Không cần chọn bài hay câu hỏi: bấm nút đỏ là nói. Ghi âm xong, ElevenLabs Scribe chép nguyên văn (giữ ừm ờ, chỗ ngừng). Bấm <b>Sao chép để chấm</b>, rồi dán vào Phòng Chấm Bài.</p>
+
+  <div class="card" id="mic-card">
+    <span class="label">Micro</span>
+    <div class="row">
+      <button class="btn primary" id="btn-mic">🎤 Cho phép micro</button>
+      <span class="status" id="mic-msg">Bấm nút để Chrome hỏi quyền dùng micro.</span>
+    </div>
+    <div class="note" id="mic-help" style="margin-top:10px" hidden></div>
+  </div>
+
+  <div class="card" id="key-card">
+    <span class="label">ElevenLabs API key</span>
+    <div class="row">
+      <input type="password" id="apikey" placeholder="Dán API key ElevenLabs (sk_...)" autocomplete="off">
+      <button class="btn" id="btn-showkey">Hiện</button>
+      <button class="btn primary" id="btn-savekey">Lưu</button>
+    </div>
+    <p class="small" id="key-msg" style="margin:8px 0 0">Key chỉ lưu trong trình duyệt trên máy này. Key cần quyền Speech to Text.</p>
+    <details style="margin-top:8px"><summary>Tuỳ chọn</summary>
+      <div class="row" style="margin-top:8px">
+        <span class="small">Model</span>
+        <select id="model"><option value="scribe_v1">scribe_v1</option><option value="scribe_v2">scribe_v2</option></select>
+        <span class="small">Ngưỡng ngừng (giây)</span>
+        <input type="number" id="pausemin" value="0.6" step="0.1" min="0.3" max="2" style="width:80px">
+      </div>
+    </details>
+  </div>
+
+
+  <div class="card">
+    <div class="row" style="gap:18px">
+      <button class="recbtn" id="btn-rec">Ghi âm</button>
+      <div>
+        <div class="timer" id="timer">0:00</div>
+        <div class="status" id="status">Sẵn sàng. Bấm nút đỏ để bắt đầu nói, nói về chủ đề gì cũng được.</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <input type="text" id="stname" placeholder="Tên học viên (không bắt buộc, để dễ tìm lại trong lịch sử)" maxlength="60" autocomplete="off" aria-label="Tên học viên">
+    </div>
+  </div>
+
+  <div class="card" id="result-card" hidden>
+    <div class="row" style="justify-content:space-between">
+      <span class="label" style="margin:0">Bản ghi nguyên văn</span>
+      <div class="row">
+        <button class="btn" id="btn-clear">Xoá, ghi lại</button>
+        <button class="btn primary" id="btn-copy">Sao chép để chấm</button>
+      </div>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="items" id="items"></div>
+    <p class="small" style="margin-top:10px"><span class="fl">đỏ</span> = từ đệm (um, uh) · <span class="uc" style="background:var(--warn-soft);color:var(--warn);padding:0 3px;border-radius:4px">[từ?]</span> = máy nghe không chắc · <span class="pz">(…1.2s)</span> = chỗ ngừng</p>
+  </div>
+  <div class="card" id="hist-card">
+    <div class="row" style="justify-content:space-between">
+      <span class="label" style="margin:0">Lịch sử bài đã ghi</span>
+      <input type="text" id="hsearch" placeholder="Tìm theo tên hoặc lời nói…" style="flex:0 1 260px;min-width:160px" aria-label="Tìm trong lịch sử">
+    </div>
+    <p class="small" style="margin:6px 0 10px">Lưu trên trình duyệt này: giọng nói, bản ghi và số liệu của từng bài. Bấm ▶ để nghe lại, bấm Sao chép để chấm để dán sang Phòng Chấm Bài.</p>
+    <div id="hist" class="hist"></div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="btn-more" hidden>Xem thêm</button><span class="small" id="hist-note"></span><button class="btn danger" id="btn-clear-all" style="margin-left:auto" hidden>Xoá toàn bộ lịch sử</button></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }catch{ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} }
+};
+const FILLERS = new Set(["um","uh","er","erm","uhm","umm","uhh","ah","eh","hmm","hm","mm","mhm"]);
+
+let current = null;        // {item, words, duration, audioUrl}
+let recorder = null, chunks = [], stream = null, t0 = 0, tick = null, busy = false;
+
+/* ---------- API key ---------- */
+$("apikey").value = store.get("pg-key", "");
+$("model").value = store.get("pg-model", "scribe_v1");
+$("pausemin").value = store.get("pg-pause", 0.6);
+$("btn-showkey").onclick = () => { const k = $("apikey"); k.type = k.type === "password" ? "text" : "password"; $("btn-showkey").textContent = k.type === "password" ? "Hiện" : "Ẩn"; };
+$("btn-savekey").onclick = () => { store.set("pg-key", $("apikey").value.trim()); $("key-msg").textContent = "Đã lưu key trên trình duyệt này."; };
+$("model").onchange = () => store.set("pg-model", $("model").value);
+$("pausemin").onchange = () => store.set("pg-pause", Number($("pausemin").value) || 0.6);
+
+/* ---------- microphone permission ---------- */
+const inFrame = (() => { try{ return window.self !== window.top; }catch{ return true; } })();
+function micBlockedByFrame(){
+  try{
+    const pp = document.permissionsPolicy || document.featurePolicy;
+    if(pp && typeof pp.allowsFeature === "function") return !pp.allowsFeature("microphone");
+  }catch{}
+  return false;
+}
+function micHelp(html){ $("mic-help").innerHTML = html; $("mic-help").hidden = !html; }
+function setMic(text, cls = ""){ $("mic-msg").textContent = text; $("mic-msg").className = "status " + cls; }
+const FRAME_HELP = `Trang đang chạy <b>bên trong khung xem trước của Claude</b>. Khung này khoá micro nên trình duyệt không hiện bảng hỏi quyền, nút nào cũng không mở được.<br>Cách dùng: mở <b>file Phòng Ghi Âm.html trực tiếp bằng Chrome</b> (Finder → chuột phải vào file → Open With → Google Chrome), rồi bấm lại nút này.`;
+const DENIED_HELP = `Chrome đang <b>chặn</b> micro cho trang này nên không hỏi lại nữa. Bấm biểu tượng ổ khoá hoặc ⓘ bên trái thanh địa chỉ → Microphone → <b>Allow</b>, rồi tải lại trang.<br>Nếu vẫn không được: System Settings → Privacy &amp; Security → Microphone → bật <b>Google Chrome</b>, rồi tắt hẳn Chrome mở lại.`;
+const NODEVICE_HELP = `Không tìm thấy micro nào. Cắm tai nghe hoặc kiểm tra System Settings → Sound → Input.`;
+
+async function askMic(){
+  if(micBlockedByFrame()){ setMic("Micro bị khoá trong khung này.", "err"); micHelp(FRAME_HELP); return false; }
+  if(!navigator.mediaDevices?.getUserMedia){ setMic("Trình duyệt này không hỗ trợ ghi âm.", "err"); micHelp(inFrame ? FRAME_HELP : "Hãy mở trang bằng Google Chrome."); return false; }
+  setMic("Đang hỏi quyền… nhìn lên góc trên thanh địa chỉ và bấm Allow / Cho phép.");
+  try{
+    const s = await navigator.mediaDevices.getUserMedia({audio:true});
+    s.getTracks().forEach(t => t.stop());
+    setMic("Micro đã sẵn sàng ✓");
+    $("btn-mic").textContent = "🎤 Micro đã bật"; micHelp("");
+    return true;
+  }catch(e){
+    const n = e && e.name;
+    if(n === "NotAllowedError" || n === "SecurityError"){ setMic("Micro bị từ chối.", "err"); micHelp(inFrame ? FRAME_HELP : DENIED_HELP); }
+    else if(n === "NotFoundError" || n === "OverconstrainedError"){ setMic("Không thấy micro.", "err"); micHelp(NODEVICE_HELP); }
+    else if(n === "NotReadableError"){ setMic("Micro đang bị app khác chiếm (Zoom, Meet…).", "err"); micHelp("Tắt micro trong Zoom/Meet hoặc app đang dùng micro, rồi bấm lại."); }
+    else { setMic(`Lỗi micro: ${n || e}`, "err"); micHelp(inFrame ? FRAME_HELP : DENIED_HELP); }
+    return false;
+  }
+}
+$("btn-mic").onclick = askMic;
+(async () => {
+  if(micBlockedByFrame()){ setMic("Micro bị khoá trong khung này.", "err"); micHelp(FRAME_HELP); return; }
+  try{
+    const st = await navigator.permissions.query({name:"microphone"});
+    const show = () => {
+      if(st.state === "granted"){ setMic("Micro đã được cho phép ✓"); $("btn-mic").textContent = "🎤 Micro đã bật"; micHelp(""); }
+      else if(st.state === "denied"){ setMic("Micro đang bị chặn.", "err"); micHelp(DENIED_HELP); }
+    };
+    show(); st.onchange = show;
+  }catch{}
+})();
+
+/* ---------- one free-talk item: the grading page works out the topic ---------- */
+function currentItem(){ return {part:1, lesson:0, q:"Free talk", free:true, topic:""}; }
+
+/* ---------- recording ---------- */
+function setStatus(t, cls = ""){ $("status").textContent = t; $("status").className = "status " + cls; }
+function fmt(s){ s = Math.max(0, Math.round(s)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }
+
+$("btn-rec").onclick = async () => {
+  if(busy) return;
+  if(recorder && recorder.state === "recording"){ recorder.stop(); return; }
+  const key = ($("apikey").value || store.get("pg-key", "")).trim();
+  if(!key){ setStatus("Chưa có API key ElevenLabs. Dán key vào ô phía trên rồi bấm Lưu.", "err"); $("apikey").focus(); return; }
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true}});
+  }catch(err){ setStatus("Không mở được micro. Xem hướng dẫn ở ô Micro phía trên.", "err"); askMic(); $("mic-card").scrollIntoView({behavior:"smooth"}); return; }
+  const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : (MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "");
+  recorder = new MediaRecorder(stream, mime ? {mimeType:mime} : undefined);
+  chunks = [];
+  const item = currentItem();
+  recorder.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
+  recorder.onstop = () => {
+    clearInterval(tick); stream.getTracks().forEach(t => t.stop());
+    $("btn-rec").classList.remove("on"); $("btn-rec").textContent = "Ghi âm";
+    const duration = (performance.now() - t0) / 1000;
+    const blob = new Blob(chunks, {type: recorder.mimeType || "audio/webm"});
+    transcribe(blob, item, duration, key);
+  };
+  recorder.start(250); t0 = performance.now();
+  $("btn-rec").classList.add("on"); $("btn-rec").textContent = "Dừng";
+  setStatus("Đang ghi âm… bấm Dừng khi nói xong.");
+  tick = setInterval(() => { const s = (performance.now() - t0) / 1000; $("timer").textContent = fmt(s); if(s > 300) recorder.stop(); }, 200);
+};
+
+async function transcribe(blob, item, duration, key, recId){
+  if(blob.size < 2000){ setStatus("Bản ghi quá ngắn hoặc không có tiếng. Ghi lại nhé.", "warn"); return; }
+  busy = true; $("btn-rec").disabled = true;
+  let rec = recId ? await hGet(recId) : null;
+  if(!rec){
+    rec = {id: Date.now() + "-" + Math.random().toString(36).slice(2, 7), date: Date.now(), name: $("stname").value.trim().slice(0, 60), duration, mime: blob.type, audio: blob, status: "pending", words: []};
+    await hPut(rec); renderHist();
+  }
+  setStatus("Đang gửi lên ElevenLabs để chép nguyên văn…");
+  const model = $("model").value;
+  const tryModel = async m => {
+    const fd = new FormData();
+    fd.append("file", blob, "answer." + (blob.type.includes("mp4") ? "m4a" : "webm"));
+    fd.append("model_id", m);
+    fd.append("language_code", "en");
+    fd.append("timestamps_granularity", "word");
+    fd.append("tag_audio_events", "true");
+    fd.append("diarize", "false");
+    const res = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {method:"POST", headers:{"xi-api-key":key}, body:fd});
+    const txt = await res.text();
+    let data = null; try{ data = JSON.parse(txt); }catch{}
+    if(!res.ok){ const msg = data?.detail?.message || data?.detail?.status || (typeof data?.detail === "string" ? data.detail : "") || txt.slice(0, 200); const e = new Error(msg); e.status = res.status; throw e; }
+    return data;
+  };
+  try{
+    let data;
+    try{ data = await tryModel(model); }
+    catch(e){
+      if(e.status === 422 || /model/i.test(e.message)){ const alt = model === "scribe_v1" ? "scribe_v2" : "scribe_v1"; data = await tryModel(alt); $("model").value = alt; store.set("pg-model", alt); }
+      else throw e;
+    }
+    const words = (data.words || []).filter(w => w.type !== "spacing");
+    if(current?.audioUrl) URL.revokeObjectURL(current.audioUrl);
+    current = {item, words, duration, text:data.text || "", audioUrl:URL.createObjectURL(blob), recId: rec.id, name: rec.name};
+    rec.words = words; rec.status = words.length ? "ok" : "empty"; rec.error = ""; await hPut(rec); renderHist();
+    if(!words.length){ setStatus("ElevenLabs không nghe được từ nào. Kiểm tra micro rồi ghi lại.", "warn"); }
+    else setStatus("Xong. Bấm Sao chép để chấm rồi dán vào Phòng Chấm Bài. Ghi âm lần nữa sẽ thay bài này.");
+    renderResults();
+    try{ $("result-card").scrollIntoView({behavior:"smooth", block:"nearest"}); }catch{}
+  }catch(e){
+    const s = e.status;
+    if(s === 401) setStatus("API key sai hoặc không có quyền Speech to Text (401). Kiểm tra lại key.", "err");
+    else if(s === 429) setStatus("ElevenLabs đang giới hạn lượt hoặc hết credit (429). Đợi chút rồi thử lại.", "err");
+    else if(!s) setStatus("Không gọi được ElevenLabs (lỗi mạng hoặc trình duyệt chặn). Kiểm tra mạng rồi thử lại.", "err");
+    else setStatus(`ElevenLabs báo lỗi ${s}: ${e.message}`, "err");
+    rec.status = "fail"; rec.error = s ? `Lỗi ${s}` : "Lỗi mạng"; await hPut(rec); renderHist();
+  }finally{ busy = false; $("btn-rec").disabled = false; }
+}
+
+/* ---------- transcript + metrics ---------- */
+const PAUSE = () => Number($("pausemin").value) || 0.6;
+const clean = w => String(w.text || "").toLowerCase().replace(/[^a-z']/g, "");
+const isFiller = w => w.type === "word" && FILLERS.has(clean(w));
+const conf = w => typeof w.logprob === "number" ? Math.exp(w.logprob) : null;
+
+function buildTranscript(words){
+  // returns {plain, html} with pause markers, [word?] for low-confidence words
+  const p = PAUSE(); let plain = "", html = "";
+  words.forEach((w, i) => {
+    if(i > 0){
+      const gap = (w.start ?? 0) - (words[i - 1].end ?? 0);
+      if(gap >= p){ plain += ` (…${gap.toFixed(1)}s)`; html += ` <span class="pz">(…${gap.toFixed(1)}s)</span>`; }
+    }
+    const t = String(w.text || "").trim(); if(!t) return;
+    const sep = (plain && !/^[,.!?;:]/.test(t)) ? " " : "";
+    if(w.type === "audio_event"){ plain += sep + t; html += sep + `<span class="pz">${esc(t)}</span>`; return; }
+    const c = conf(w);
+    if(c !== null && c < 0.5){ const m = t.match(/^(.*?)([,.!?;:]*)$/), core = m[1] || t, tail = m[1] ? m[2] : ""; plain += sep + `[${core}?]${tail}`; html += sep + `<span class="uc">[${esc(core)}?]</span>${esc(tail)}`; }
+    else if(isFiller(w)){ plain += sep + t; html += sep + `<span class="fl">${esc(t)}</span>`; }
+    else { plain += sep + t; html += sep + esc(t); }
+  });
+  return {plain: plain.trim(), html: html.trim()};
+}
+
+function metricsOf(list){
+  const p = PAUSE(); let nWords = 0, fillers = 0, pauses = 0, longPauses = 0, speak = 0, confN = 0, confOk = 0;
+  const unclear = []; const runs = []; let run = 0;
+  for(const r of list){
+    const ws = r.words.filter(w => w.type === "word");
+    if(ws.length) speak += Math.max(0, (ws[ws.length - 1].end ?? 0) - (ws[0].start ?? 0));
+    ws.forEach((w, i) => {
+      if(i > 0){ const gap = (w.start ?? 0) - (ws[i - 1].end ?? 0); if(gap >= p){ pauses++; if(gap >= 1.5) longPauses++; if(run) runs.push(run); run = 0; } }
+      if(isFiller(w)){ fillers++; if(run) runs.push(run); run = 0; return; }
+      nWords++; run++;
+      const c = conf(w); if(c !== null){ confN++; if(c >= 0.5) confOk++; else if(unclear.length < 10) unclear.push(String(w.text).trim().replace(/[,.!?;:]+$/, "")); }
+    });
+    if(run) runs.push(run); run = 0;
+  }
+  const total = nWords + fillers;
+  return {
+    seconds: Math.round(speak),
+    wpm: speak > 0 ? Math.round(nWords / speak * 60) : 0,
+    fillers,
+    fillerRate: total ? Math.round(fillers / total * 1000) / 10 : 0,
+    pauses, longPauses,
+    mlr: runs.length ? Math.round(runs.reduce((a, b) => a + b, 0) / runs.length * 10) / 10 : 0,
+    clarity: confN ? Math.round(confOk / confN * 100) : null,
+    unclear
+  };
+}
+
+function activeResults(){ return current ? [current] : []; }
+
+function renderResults(){
+  const list = activeResults();
+  $("result-card").hidden = !list.length;
+  if(!list.length) return;
+  const m = metricsOf(list);
+  $("stats").innerHTML = [[fmt(m.seconds), "thời gian nói"], [m.wpm, "từ/phút"], [m.fillers, "ừm, ờ"], [m.pauses, "chỗ ngừng"], [m.mlr, "từ mỗi mạch"], [m.clarity === null ? "–" : m.clarity + "%", "máy nghe rõ"]]
+    .map(([b, l]) => `<div class="stat"><b>${b}</b><span>${l}</span></div>`).join("");
+  $("items").innerHTML = list.map((r, n) => {
+    const t = buildTranscript(r.words);
+    return `<div class="item"><h3>Bài nói · ${fmt(m.seconds)}</h3><div class="tr">${t.html || "<i>(không có lời)</i>"}</div><audio controls src="${r.audioUrl}"></audio></div>`;
+  }).join("") + (m.clarity === null ? `<div class="note">ElevenLabs không trả độ tin cậy từng từ, nên ô "máy nghe rõ" để trống. Trang chấm sẽ ước lượng phát âm thận trọng hơn.</div>` : "");
+}
+
+function payload(list = activeResults()){
+  const m = metricsOf(list);
+  return JSON.stringify({
+    phongnoi: 1,
+    source: "elevenlabs-scribe",
+    student: list[0]?.name || "",
+    items: list.map(r => ({part:r.item.part, lesson:r.item.lesson, q:r.item.q, free:r.item.free, topic:r.item.topic, transcript: buildTranscript(r.words).plain || "(no answer)"})),
+    metrics: {...m, clarity: m.clarity === null ? 0 : m.clarity}
+  });
+}
+
+$("btn-copy").onclick = async () => {
+  const text = payload();
+  try{ await navigator.clipboard.writeText(text); }
+  catch{ const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); }
+  $("btn-copy").textContent = "Đã chép ✓"; setTimeout(() => $("btn-copy").textContent = "Sao chép để chấm", 1800);
+  setStatus("Đã chép. Mở Phòng Chấm Bài, nhấn ⌘V ở bất kỳ đâu để chấm.");
+};
+$("btn-clear").onclick = () => {
+  if(current?.audioUrl) URL.revokeObjectURL(current.audioUrl);
+  current = null;
+  $("timer").textContent = "0:00"; setStatus("Đã xoá. Sẵn sàng ghi lại."); renderResults();
+};
+
+/* ---------- history (IndexedDB on this browser) ---------- */
+let idb = null;
+function openDB(){
+  if(idb) return idb;
+  idb = new Promise((ok, no) => {
+    try{
+      const r = indexedDB.open("phong-ghi-am", 1);
+      r.onupgradeneeded = () => r.result.createObjectStore("recs", {keyPath: "id"});
+      r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error);
+    }catch(e){ no(e); }
+  });
+  return idb;
+}
+async function tx(mode, fn){ const db = await openDB(); return new Promise((ok, no) => { const t = db.transaction("recs", mode); const st = t.objectStore("recs"); const out = fn(st); t.oncomplete = () => ok(out && "result" in out ? out.result : undefined); t.onerror = () => no(t.error); }); }
+const hPut = r => tx("readwrite", st => st.put(r)).catch(() => {});
+const hGet = id => tx("readonly", st => st.get(id)).catch(() => null);
+const hDel = id => tx("readwrite", st => st.delete(id)).catch(() => {});
+const hClear = () => tx("readwrite", st => st.clear()).catch(() => {});
+const hAll = () => tx("readonly", st => st.getAll()).then(a => (a || []).sort((x, y) => y.date - x.date)).catch(() => null);
+
+let histShown = 20, histUrls = [];
+const fmtDate = t => new Date(t).toLocaleString("vi-VN", {hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit"});
+function recResult(r){ return {item: currentItem(), words: r.words || [], duration: r.duration, name: r.name}; }
+async function renderHist(){
+  const all = await hAll();
+  histUrls.forEach(u => URL.revokeObjectURL(u)); histUrls = [];
+  if(all === null){ $("hist").innerHTML = `<div class="empty">Trình duyệt này không cho lưu lịch sử (có thể đang ở chế độ ẩn danh).</div>`; return; }
+  const q = $("hsearch").value.trim().toLowerCase();
+  const list = q ? all.filter(r => (r.name || "").toLowerCase().includes(q) || buildTranscript(r.words || []).plain.toLowerCase().includes(q)) : all;
+  $("hist-note").textContent = all.length ? `${all.length} bài đã lưu` : "";
+  $("btn-clear-all").hidden = !all.length;
+  if(!list.length){ $("hist").innerHTML = `<div class="empty">${all.length ? "Không có bài nào khớp." : "Chưa có bài nào. Ghi âm xong, bài sẽ tự lưu vào đây."}</div>`; $("btn-more").hidden = true; return; }
+  $("hist").innerHTML = list.slice(0, histShown).map(r => {
+    const ok = r.status === "ok", t = ok ? buildTranscript(r.words) : null, m = ok ? metricsOf([recResult(r)]) : null;
+    const url = r.audio ? URL.createObjectURL(r.audio) : ""; if(url) histUrls.push(url);
+    return `<div class="hitem${r.status === "fail" ? " fail" : ""}" data-id="${esc(r.id)}">
+      <div class="hhead"><input class="hname" value="${esc(r.name || "")}" placeholder="Tên học viên" maxlength="60" aria-label="Tên học viên"><span class="hmeta">${fmtDate(r.date)} · ${fmt(ok ? m.seconds : r.duration)}${ok ? ` · ${m.wpm} từ/phút · ${m.fillers} ừm ờ` : ""}</span></div>
+      ${ok ? `<div class="hprev" title="Bấm để xem hết">${t.html}</div>` : `<div class="small">${r.status === "fail" ? `Chưa chép được lời (${esc(r.error || "lỗi")}). Giọng nói vẫn được giữ, bấm Thử chép lại.` : r.status === "empty" ? "ElevenLabs không nghe được lời nào trong bài này." : "Đang chép lời…"}</div>`}
+      ${url ? `<audio controls preload="none" src="${url}"></audio>` : ""}
+      <div class="row">${ok ? `<button class="btn primary" data-act="copy">Sao chép để chấm</button><button class="btn" data-act="text">Chép lời nói</button>` : r.status === "fail" ? `<button class="btn primary" data-act="retry">Thử chép lại</button>` : ""}<button class="btn danger" data-act="del">Xoá</button></div>
+    </div>`;
+  }).join("");
+  $("btn-more").hidden = list.length <= histShown;
+}
+async function copyText(text, btn, label){
+  try{ await navigator.clipboard.writeText(text); }
+  catch{ const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); }
+  btn.textContent = "Đã chép ✓"; setTimeout(() => { btn.textContent = label; }, 1600);
+}
+$("hist").addEventListener("click", async e => {
+  const box = e.target.closest(".hitem"); if(!box) return;
+  if(e.target.closest(".hprev")){ e.target.closest(".hprev").classList.toggle("open"); return; }
+  const b = e.target.closest("button[data-act]"); if(!b) return;
+  const r = await hGet(box.dataset.id); if(!r) return;
+  const act = b.dataset.act;
+  if(act === "copy"){ r.name = box.querySelector(".hname").value.trim(); copyText(payload([recResult(r)]), b, "Sao chép để chấm"); setStatus("Đã chép bài trong lịch sử. Mở Phòng Chấm Bài, nhấn ⌘V để chấm."); }
+  else if(act === "text"){ copyText(buildTranscript(r.words).plain, b, "Chép lời nói"); }
+  else if(act === "retry"){
+    if(busy) return;
+    const key = ($("apikey").value || store.get("pg-key", "")).trim();
+    if(!key){ setStatus("Chưa có API key ElevenLabs. Dán key vào ô phía trên rồi bấm Lưu.", "err"); return; }
+    window.scrollTo({top: 0, behavior: "smooth"});
+    transcribe(r.audio, currentItem(), r.duration, key, r.id);
+  }
+  else if(act === "del"){
+    if(!b.dataset.armed){ b.dataset.armed = "1"; b.textContent = "Bấm lần nữa để xoá"; setTimeout(() => { if(b.isConnected){ delete b.dataset.armed; b.textContent = "Xoá"; } }, 3500); return; }
+    await hDel(r.id); if(current?.recId === r.id){ current = null; renderResults(); } renderHist();
+  }
+});
+$("hist").addEventListener("change", async e => {
+  const inp = e.target.closest(".hname"); if(!inp) return;
+  const r = await hGet(inp.closest(".hitem").dataset.id); if(!r) return;
+  r.name = inp.value.trim().slice(0, 60); await hPut(r);
+});
+$("hsearch").addEventListener("input", () => { histShown = 20; renderHist(); });
+$("btn-more").onclick = () => { histShown += 20; renderHist(); };
+$("btn-clear-all").onclick = async () => {
+  const b = $("btn-clear-all");
+  if(!b.dataset.armed){ b.dataset.armed = "1"; b.textContent = "Bấm lần nữa: xoá hết, không lấy lại được"; setTimeout(() => { if(b.isConnected){ delete b.dataset.armed; b.textContent = "Xoá toàn bộ lịch sử"; } }, 4000); return; }
+  delete b.dataset.armed; b.textContent = "Xoá toàn bộ lịch sử";
+  await hClear(); if(current?.recId){ current = null; renderResults(); } histShown = 20; renderHist(); setStatus("Đã xoá toàn bộ lịch sử trên trình duyệt này.");
+};
+
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]); }
+renderResults();
+renderHist();
+</script>
+</body>
+</html>
